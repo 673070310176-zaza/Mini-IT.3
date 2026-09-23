@@ -131,14 +131,13 @@
         const numItems = items.length;
         const arc = (2 * Math.PI) / numItems;
 
-        let currentAngle = startAngle % (2 * Math.PI);
-        if (currentAngle < 0) currentAngle += 2 * Math.PI;
+        // คำนวณหามุมองศาปัจจุบันที่ตรงกับลูกศรบนสุด (270 องศา หรือ 1.5 * PI)
+        let degrees = (startAngle * 180 / Math.PI) % 360;
+        if (degrees < 0) degrees += 360;
 
-        let actualAngle = (1.5 * Math.PI - currentAngle) % (2 * Math.PI);
-        if (actualAngle < 0) actualAngle += 2 * Math.PI;
-
-        let index = Math.floor(actualAngle / arc);
-        index = (numItems - index) % numItems;
+        // ลูกศรอยู่ด้านบน (270 องศา) ลบด้วยมุมที่หมุนไป
+        let arcr = 360 / numItems;
+        let index = Math.floor((360 - degrees + 270) / arcr) % numItems;
 
         const selectedResult = items[index];
 
