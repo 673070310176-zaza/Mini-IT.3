@@ -93,7 +93,6 @@
             ctx.lineTo(125, 125);
             ctx.fill();
 
-            // พิมพ์ตัวอักษรให้อยู่ตรงกลางช่องพอดี
             ctx.save();
             ctx.fillStyle = "#ffffff";
             ctx.font = "bold 13px sans-serif";
@@ -129,22 +128,20 @@
     function stopRotateWheel() {
         isSpinning = false;
         
-        // คำนวณหาช่องที่ลูกศรสีแดงด้านบนสุด (270 องศา หรือ 1.5 * PI) ชี้อยู่พอดี
         const numItems = items.length;
         const arc = (2 * Math.PI) / numItems;
-        
-        // ปรับมุมให้อยู่ในระยะ 0 ถึง 2*PI
-        let normalizedAngle = startAngle % (2 * Math.PI);
-        if (normalizedAngle < 0) normalizedAngle += 2 * Math.PI;
 
-        // ตำแหน่งลูกศรอยู่ด้านบนสุด (มุม 1.5 * Math.PI)
-        let pointerAngle = (1.5 * Math.PI - normalizedAngle) % (2 * Math.PI);
-        if (pointerAngle < 0) pointerAngle += 2 * Math.PI;
+        let currentAngle = startAngle % (2 * Math.PI);
+        if (currentAngle < 0) currentAngle += 2 * Math.PI;
 
-        const index = Math.floor(pointerAngle / arc) % numItems;
+        let actualAngle = (1.5 * Math.PI - currentAngle) % (2 * Math.PI);
+        if (actualAngle < 0) actualAngle += 2 * Math.PI;
+
+        let index = Math.floor(actualAngle / arc);
+        index = (numItems - index) % numItems;
+
         const selectedResult = items[index];
 
-        // ส่งข้อมูลกลับ Thunkable
         const responseData = JSON.stringify({ data: selectedResult });
         if (window.ReactNativeWebView) {
             window.ReactNativeWebView.postMessage(responseData);
