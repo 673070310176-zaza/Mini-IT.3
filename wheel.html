@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; background: transparent; font-family: sans-serif; }
+    #wheel-container { position: relative; width: 300px; height: 300px; }
+    canvas { width: 100%; height: 100%; border-radius: 50%; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+    #pointer { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 15px solid transparent; border-right: 15px solid transparent; border-top: 25px solid #ff4757; z-index: 10; }
+  </style>
+</head>
+<body>
+
+  <div id="wheel-container">
+    <div id="pointer"></div>
+    <canvas id="wheel" width="300" height="300"></canvas>
+  </div>
+
+  <script>
+    let foods = ["ส้มตำ", "ข้าวมันไก่", "ชาบู"]; // รายการเริ่มต้น
+    const colors = ["#FF6384", "#36A2EB", "#FFCE56", "#4BC0C0", "#9966FF", "#FF9F40", "#2ECC71", "#E74C3C"];
+    
+    const canvas = document.getElementById("wheel");
+    const ctx = canvas.getContext("2d");
+    let currentAngle = 0;
+    let isSpinning = false;
+
+    // วาดวงล้อตามรายการอาหาร
+    function drawWheel() {
+      const total = foods.length;
+      if (total === 0) return;
+      const arc = Math.PI * 2 / total;
+
+      ctx.clearRect(0, 0, 300, 300);
+
+      for (let i = 0; i < total; i++) {
+        const angle = currentAngle + i * arc;
+        ctx.fillStyle = colors[i % colors.length];
+        ctx.beginPath();
+        ctx.arc(150, 150, 150, angle, angle + arc);
+        ctx.lineTo(150, 150);
+        ctx.fill();
+
+        // เขียนข้อความ
+        ctx.save();
+        ctx.fillStyle = "#fff";
+        ctx.font = "bold 14px sans-serif";
+        ctx.translate(150 + Math.cos(angle + arc / 2) * 100, 150 + Math.sin(angle + arc / 2) * 100);
+        ctx.rotate(angle + arc / 2 + Math.PI / 2);
+        ctx.fillText(foods[i], -ctx.measureText(foods[i]).width / 2, 0);
+        ctx.restore();
+      }
+    }
+
+    // ฟังก์ชันหมุนวงล้อ
+    function spin() {
+      if (isSpinning || foods.length === 0) return;
+      isSpinning = true;
+
+      const total = foods.length;
+      const arc = Math.PI * 2 / total;
+      const spinAngle = Math.floor(Math.random() * 360) + 1440;
+      const duration = 4000;
+      const start = performance.now();
+
+      function animate(time) {
+        let elapsed = time - start;
+        let progress = Math.min(elapsed / duration, 1);
+        let easeOut = 1 - Math.pow(1 - progress, 3);
+        currentAngle = (spinAngle * (Math.PI / 180)) * easeOut;
+
+        drawWheel();
+
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          isSpinning = false;
+          let degrees = (currentAngle * (180 / Math.PI)) % 360;
+          let arcd = (arc * (180 / Math.PI));
+          let index = Math.floor((360 - (degrees % 360) + 270) % 360 / arcd);
+          let result = foods[index];
+
+          if (window.ThunkableWebviewerExtension) {
+            ThunkableWebviewerExtension.postMessage(JSON.stringify({ type: "RESULT", data: result }));
+          }
+        }
+      }
+      requestAnimationFrame(animate);
+    }
+
+    drawWheel();
+
+    // รับคำสั่งและข้อมูลจาก Thunkable
+    if (window.ThunkableWebviewerExtension) {
+      ThunkableWebviewerExtension.receiveMessage(function(message) {
+        try {
+          let parsed = JSON.parse(message);
+          if (parsed.type === "SET_LIST") {
+            foods = parsed.data; // อัปเดตรายการอาหารใหม่
+            currentAngle = 0;
+            drawWheel();
+          } else if (parsed.type === "SPIN") {
+            spin();
+          }
+        } catch(e) {}
+      });
+    }
+  </script>
+</body>
+</html>
