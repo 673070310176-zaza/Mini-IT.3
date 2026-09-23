@@ -5,51 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Wheel of Fortune</title>
     <style>
-        * {
-            box-sizing: border-box;
-        }
+        * { box-sizing: border-box; }
         html, body {
-            width: 100%;
-            height: 100%;
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-            background-color: transparent;
-            font-family: sans-serif;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
+            width: 100%; height: 100%; margin: 0; padding: 0;
+            overflow: hidden; background-color: transparent;
+            font-family: sans-serif; display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
         }
         #canvas-container {
-            position: relative;
-            width: 250px;
-            height: 250px;
-            margin: 0 auto;
+            position: relative; width: 250px; height: 250px; margin: 0 auto;
         }
-        canvas {
-            width: 100%;
-            height: 100%;
-            display: block;
-        }
+        canvas { width: 100%; height: 100%; display: block; }
         .pointer {
-            position: absolute;
-            top: -8px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 0;
-            height: 0;
-            border-left: 12px solid transparent;
-            border-right: 12px solid transparent;
-            border-top: 20px solid #ff4757;
-            z-index: 10;
+            position: absolute; top: -8px; left: 50%; transform: translateX(-50%);
+            width: 0; height: 0;
+            border-left: 12px solid transparent; border-right: 12px solid transparent;
+            border-top: 20px solid #ff4757; z-index: 10;
         }
-        #msg {
-            margin-top: 6px;
-            font-size: 13px;
-            color: #888;
-            text-align: center;
-        }
+        #msg { margin-top: 6px; font-size: 13px; color: #888; text-align: center; }
     </style>
 </head>
 <body>
@@ -131,11 +104,9 @@
         const numItems = items.length;
         const arc = (2 * Math.PI) / numItems;
 
-        // คำนวณหามุมองศาปัจจุบันที่ตรงกับลูกศรบนสุด (270 องศา หรือ 1.5 * PI)
         let degrees = (startAngle * 180 / Math.PI) % 360;
         if (degrees < 0) degrees += 360;
 
-        // ลูกศรอยู่ด้านบน (270 องศา) ลบด้วยมุมที่หมุนไป
         let arcr = 360 / numItems;
         let index = Math.floor((360 - degrees + 270) / arcr) % numItems;
 
@@ -166,19 +137,17 @@
                 }
             } else if (messageData.type === 'SPIN') {
                 spin();
+            } else if (messageData.type === 'CLEAR') {
+                items = [];
+                drawWheel();
             }
         } catch (e) {
             console.error(e);
         }
     }
 
-    window.addEventListener('message', function(event) {
-        handleMessage(event.data);
-    });
-
-    document.addEventListener('message', function(event) {
-        handleMessage(event.data);
-    });
+    window.addEventListener('message', function(event) { handleMessage(event.data); });
+    document.addEventListener('message', function(event) { handleMessage(event.data); });
 
     drawWheel();
 </script>
