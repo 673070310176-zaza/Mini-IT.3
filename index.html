@@ -2,44 +2,53 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Wheel of Fortune</title>
     <style>
-        body {
+        * {
+            box-sizing: border-box;
+        }
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: transparent;
+            font-family: sans-serif;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            height: 100vh;
-            margin: 0;
-            background-color: #ffffff;
-            font-family: sans-serif;
         }
         #canvas-container {
             position: relative;
-            width: 280px;
-            height: 280px;
+            width: 250px;
+            height: 250px;
+            margin: 0 auto;
         }
         canvas {
             width: 100%;
             height: 100%;
+            display: block;
         }
         .pointer {
             position: absolute;
-            top: -10px;
+            top: -8px;
             left: 50%;
             transform: translateX(-50%);
             width: 0;
             height: 0;
-            border-left: 15px solid transparent;
-            border-right: 15px solid transparent;
-            border-top: 25px solid #ff4757;
+            border-left: 12px solid transparent;
+            border-right: 12px solid transparent;
+            border-top: 20px solid #ff4757;
             z-index: 10;
         }
         #msg {
-            margin-top: 10px;
-            font-size: 14px;
+            margin-top: 6px;
+            font-size: 13px;
             color: #888;
+            text-align: center;
         }
     </style>
 </head>
@@ -47,16 +56,15 @@
 
 <div id="canvas-container">
     <div class="pointer"></div>
-    <canvas id="wheelCanvas" width="280" height="280"></canvas>
+    <canvas id="wheelCanvas" width="250" height="250"></canvas>
 </div>
-<div id="msg">กรุณาเพิ่มรายการอาหาร</div>
+<div id="msg">กรุณาเพิ่มรายการ</div>
 
 <script>
     const canvas = document.getElementById('wheelCanvas');
     const ctx = canvas.getContext('2d');
     const msgDiv = document.getElementById('msg');
     
-    // ตั้งค่าเริ่มต้นเป็นรายการว่างเปล่า (ไม่มีเมนูชาบู/ข้าวมันไก่ติดมาแล้ว)
     let items = [];
     let colors = ["#ffdd59", "#4bc0c0", "#ff6b81", "#36a2eb", "#cc65fe", "#ffce56"];
     let startAngle = 0;
@@ -68,9 +76,9 @@
         if (items.length === 0) {
             ctx.fillStyle = "#e0e0e0";
             ctx.beginPath();
-            ctx.arc(140, 140, 130, 0, 2 * Math.PI);
+            ctx.arc(125, 125, 115, 0, 2 * Math.PI);
             ctx.fill();
-            msgDiv.innerText = "กรุณาเพิ่มรายการอาหาร";
+            msgDiv.innerText = "กรุณาเพิ่มรายการ";
             return;
         }
 
@@ -81,14 +89,15 @@
             const angle = startAngle + i * arc;
             ctx.fillStyle = colors[i % colors.length];
             ctx.beginPath();
-            ctx.arc(140, 140, 130, angle, angle + arc, false);
-            ctx.lineTo(140, 140);
+            ctx.arc(125, 125, 115, angle, angle + arc, false);
+            ctx.lineTo(125, 125);
             ctx.fill();
 
+            // พิมพ์ตัวอักษรให้อยู่ตรงกลางช่องพอดี
             ctx.save();
             ctx.fillStyle = "#ffffff";
             ctx.font = "bold 13px sans-serif";
-            ctx.translate(140 + Math.cos(angle + arc / 2) * 80, 140 + Math.sin(angle + arc / 2) * 80);
+            ctx.translate(125 + Math.cos(angle + arc / 2) * 70, 125 + Math.sin(angle + arc / 2) * 70);
             ctx.rotate(angle + arc / 2 + Math.PI / 2);
             ctx.fillText(items[i], -ctx.measureText(items[i]).width / 2, 0);
             ctx.restore();
@@ -119,9 +128,20 @@
 
     function stopRotateWheel() {
         isSpinning = false;
-        const degrees = (startAngle * 180 / Math.PI) % 360;
-        const arcr = (2 * Math.PI) / items.length;
-        const index = Math.floor((360 - degrees) / (arcr * 180 / Math.PI)) % items.length;
+        
+        // คำนวณหาช่องที่ลูกศรสีแดงด้านบนสุด (270 องศา หรือ 1.5 * PI) ชี้อยู่พอดี
+        const numItems = items.length;
+        const arc = (2 * Math.PI) / numItems;
+        
+        // ปรับมุมให้อยู่ในระยะ 0 ถึง 2*PI
+        let normalizedAngle = startAngle % (2 * Math.PI);
+        if (normalizedAngle < 0) normalizedAngle += 2 * Math.PI;
+
+        // ตำแหน่งลูกศรอยู่ด้านบนสุด (มุม 1.5 * Math.PI)
+        let pointerAngle = (1.5 * Math.PI - normalizedAngle) % (2 * Math.PI);
+        if (pointerAngle < 0) pointerAngle += 2 * Math.PI;
+
+        const index = Math.floor(pointerAngle / arc) % numItems;
         const selectedResult = items[index];
 
         // ส่งข้อมูลกลับ Thunkable
@@ -139,7 +159,6 @@
         return b + c * (tc + -3 * ts + 3 * t);
     }
 
-    // ฟังก์ชันรับข้อความรองรับทุกระบบ (ทั้ง Android/iOS/Web Preview)
     function handleMessage(rawMessage) {
         try {
             let messageData = typeof rawMessage === 'string' ? JSON.parse(rawMessage) : rawMessage;
@@ -157,7 +176,6 @@
         }
     }
 
-    // Event Listeners
     window.addEventListener('message', function(event) {
         handleMessage(event.data);
     });
