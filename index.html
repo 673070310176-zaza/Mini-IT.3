@@ -7,6 +7,7 @@
     <style>
         body {
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
             height: 100vh;
@@ -16,8 +17,8 @@
         }
         #canvas-container {
             position: relative;
-            width: 300px;
-            height: 300px;
+            width: 280px;
+            height: 280px;
         }
         canvas {
             width: 100%;
@@ -35,42 +36,59 @@
             border-top: 25px solid #ff4757;
             z-index: 10;
         }
+        #msg {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #888;
+        }
     </style>
 </head>
 <body>
 
 <div id="canvas-container">
     <div class="pointer"></div>
-    <canvas id="wheelCanvas" width="300" height="300"></canvas>
+    <canvas id="wheelCanvas" width="280" height="280"></canvas>
 </div>
+<div id="msg">กรุณาเพิ่มรายการอาหาร</div>
 
 <script>
     const canvas = document.getElementById('wheelCanvas');
     const ctx = canvas.getContext('2d');
+    const msgDiv = document.getElementById('msg');
     
-    let items = ["ชาบู", "ข้าวมันไก่", "ส้มตำ"];
+    // ตั้งค่าเริ่มต้นเป็นรายการว่างเปล่า (ไม่มีเมนูชาบู/ข้าวมันไก่ติดมาแล้ว)
+    let items = [];
     let colors = ["#ffdd59", "#4bc0c0", "#ff6b81", "#36a2eb", "#cc65fe", "#ffce56"];
     let startAngle = 0;
     let isSpinning = false;
 
     function drawWheel() {
-        if (items.length === 0) return;
-        const arc = (2 * Math.PI) / items.length;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        if (items.length === 0) {
+            ctx.fillStyle = "#e0e0e0";
+            ctx.beginPath();
+            ctx.arc(140, 140, 130, 0, 2 * Math.PI);
+            ctx.fill();
+            msgDiv.innerText = "กรุณาเพิ่มรายการอาหาร";
+            return;
+        }
+
+        msgDiv.innerText = "";
+        const arc = (2 * Math.PI) / items.length;
 
         for (let i = 0; i < items.length; i++) {
             const angle = startAngle + i * arc;
             ctx.fillStyle = colors[i % colors.length];
             ctx.beginPath();
-            ctx.arc(150, 150, 140, angle, angle + arc, false);
-            ctx.lineTo(150, 150);
+            ctx.arc(140, 140, 130, angle, angle + arc, false);
+            ctx.lineTo(140, 140);
             ctx.fill();
 
-            // พิมพ์ตัวอักษร
             ctx.save();
             ctx.fillStyle = "#ffffff";
-            ctx.font = "bold 14px sans-serif";
-            ctx.translate(150 + Math.cos(angle + arc / 2) * 90, 150 + Math.sin(angle + arc / 2) * 90);
+            ctx.font = "bold 13px sans-serif";
+            ctx.translate(140 + Math.cos(angle + arc / 2) * 80, 140 + Math.sin(angle + arc / 2) * 80);
             ctx.rotate(angle + arc / 2 + Math.PI / 2);
             ctx.fillText(items[i], -ctx.measureText(items[i]).width / 2, 0);
             ctx.restore();
@@ -83,7 +101,7 @@
 
         let spinAngleStart = Math.random() * 10 + 20;
         let spinTime = 0;
-        let spinTimeTotal = Math.random() * 3000 + 4000; // หมุน 4-7 วินาที
+        let spinTimeTotal = Math.random() * 2000 + 3000;
 
         function rotateWheel() {
             spinTime += 30;
@@ -106,9 +124,12 @@
         const index = Math.floor((360 - degrees) / (arcr * 180 / Math.PI)) % items.length;
         const selectedResult = items[index];
 
-        // ส่งผลลัพธ์กลับไปยัง Thunkable
+        // ส่งข้อมูลกลับ Thunkable
+        const responseData = JSON.stringify({ data: selectedResult });
         if (window.ReactNativeWebView) {
-            window.ReactNativeWebView.postMessage(JSON.stringify({ data: selectedResult }));
+            window.ReactNativeWebView.postMessage(responseData);
+        } else if (window.parent) {
+            window.parent.postMessage(responseData, "*");
         }
     }
 
@@ -118,13 +139,13 @@
         return b + c * (tc + -3 * ts + 3 * t);
     }
 
-    // รับคำสั่งจาก Thunkable (Post Message)
-    window.addEventListener('message', function(event) {
+    // ฟังก์ชันรับข้อความรองรับทุกระบบ (ทั้ง Android/iOS/Web Preview)
+    function handleMessage(rawMessage) {
         try {
-            let messageData = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+            let messageData = typeof rawMessage === 'string' ? JSON.parse(rawMessage) : rawMessage;
             
             if (messageData.type === 'SET_LIST') {
-                if (Array.isArray(messageData.data) && messageData.data.length > 0) {
+                if (Array.isArray(messageData.data)) {
                     items = messageData.data;
                     drawWheel();
                 }
@@ -134,6 +155,15 @@
         } catch (e) {
             console.error(e);
         }
+    }
+
+    // Event Listeners
+    window.addEventListener('message', function(event) {
+        handleMessage(event.data);
+    });
+
+    document.addEventListener('message', function(event) {
+        handleMessage(event.data);
     });
 
     drawWheel();
